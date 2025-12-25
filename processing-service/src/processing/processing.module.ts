@@ -6,11 +6,12 @@ import { RedisModule } from '../redis/redis.module';
 import { RulesModule } from '../rules/rule.module';
 import { ReportController } from './report.controller';
 import { DatabaseModule } from '../common/database';
+import { EventsModule } from '../events/event.module';
 
 @Module({
   imports: [
     DatabaseModule,
-
+    EventsModule,
     RulesModule,
     RedisModule,
 
