@@ -7,6 +7,7 @@ import { RulesModule } from '../rules/rule.module';
 import { ReportController } from './report.controller';
 import { DatabaseModule } from '../common/database';
 import { EventsModule } from '../events/event.module';
+import { TriggersModule } from '../triggers/trigger.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { EventsModule } from '../events/event.module';
     EventsModule,
     RulesModule,
     RedisModule,
+    TriggersModule,
 
     KafkaModule
   ],
