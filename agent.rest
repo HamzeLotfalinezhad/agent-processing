@@ -1,0 +1,29 @@
+@baseUrl = http://localhost:4101
+# @ruleId = 694d84b23865d7c695cd6986
+@ruleId = 694d871855166f5016a9fb41
+@agentId = agent-1
+
+
+###
+# Report #1
+# → زمان رخدادهای rule برای یک agent در یک بازه زمانی
+GET {{baseUrl}}/reports/rule/{{ruleId}}/agent/{{agentId}}?last=10m
+
+
+###
+# Report #2
+# لیست agentها مرتب بر اساس تعداد رخداد rule
+GET {{baseUrl}}/reports/rule/{{ruleId}}/agents?top=10
+
+
+###
+POST {{baseUrl}}/rules
+Content-Type: application/json
+
+{
+  "name": "High temperature",
+  "eventName": "temperature",
+  "operator": ">",
+  "threshold": 80
+}
+

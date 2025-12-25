@@ -4,7 +4,7 @@
 /build
 /sleepr-source
 /node_modules
-
+/volumes/docker-volumes
 # Logs
 logs
 *.log

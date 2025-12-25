@@ -1,0 +1,117 @@
+
+services:
+
+  agent-service:
+    build:
+      context: ../agent-service
+      dockerfile: Dockerfile
+    ports:
+      - "4100:3000"
+    environment:
+      PORT: 4100
+      AGENT_ID: agent-1
+      KAFKA_BROKERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis-stack:
+        condition: service_started
+      mongodb:
+        condition: service_started
+    networks:
+      - existing_network
+
+  processing-service:
+    build:
+      context: ../processing-service
+      dockerfile: Dockerfile
+    ports:
+      - "4101:4101"
+    environment:
+      PORT: 4101
+      MONGODB_URI: mongodb://mongodb_container:27017/processing-db
+      REDIS_URL: redis://redis-stack:6379
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CONSUMER_GROUP: process-service-consumer
+    depends_on:
+      - kafka
+      - redis-stack
+      - mongodb
+      - postgres
+    networks:
+      - existing_network
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_container
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./docker-volumes/data:/data/db
+    networks:
+      - existing_network
+
+  postgres:
+    container_name: postgres_container
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: hlan
+      POSTGRES_DB: authdb
+      POSTGRES_PASSWORD: hlan1234
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker-volumes/postgres:/var/lib/postgresql/data
+    networks:
+      - existing_network
+
+  redis-stack:
+    container_name: redis_stack_container
+    image: redis/redis-stack:latest
+    restart: always
+    ports:
+        - "6379:6379" 
+        - "8001:8001"
+    volumes:
+      - ./docker-volumes/cache-stack:/data
+    networks:
+      - existing_network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - existing_network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD", "bash", "-c", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - existing_network
+
+networks:
+  existing_network:
+    driver: bridge
