@@ -5,4 +5,14 @@ import { RuleOperator } from '../rule.schema';
 export class CreateRuleDto {
   @IsString()
   name: string;
+
+  @IsString()
+  eventName: string;
+
+  @IsIn(['>', '<', '=', '>=', '<='])
+  operator: RuleOperator;
+
+  @Type(() => Number)
+  @IsNumber()
+  threshold: number;
 }
