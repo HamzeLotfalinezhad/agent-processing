@@ -1,6 +1,7 @@
 import { Controller, Logger } from '@nestjs/common';
 import { Ctx, EventPattern, KafkaContext, MessagePattern, Payload } from '@nestjs/microservices';
 import { EventService } from '../../events/event.service';
+import { TriggerService } from '../../triggers/trigger.service';
 
 @Controller()
 export class KafkaConsumerController {
@@ -8,23 +9,23 @@ export class KafkaConsumerController {
 
   constructor(
     private readonly eventService: EventService,
+    private readonly triggerService: TriggerService,
   ) { }
 
   @EventPattern('agent.events')
+  // async handleAgentEvent(@Payload() message: any) {
   async handleAgentEvent(@Payload() data: any, @Ctx() context: KafkaContext) {
     const message = context.getMessage();
 
     const payload = typeof message.value === 'string' ? JSON.parse(message.value) : message.value;
-
     this.logger.log(`Payload from Kafka:`, payload);
 
     // 1️ First save event in mongo
     this.logger.debug(`1.1. Save in db Event Model`)
-    // const event = await this.eventService.save(payload);
-    // this.logger.log(event)
+    const event = await this.eventService.save(payload);
 
     // 2️ match rules + save RuleTrigger + Redis
     this.logger.debug(`1.2. Match rules + save RuleTrigger + Redis`)
-    // TODO
+    await this.triggerService.match(event);
   }
 }

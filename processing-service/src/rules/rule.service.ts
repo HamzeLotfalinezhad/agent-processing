@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Rule, RuleDocument } from './rule.schema';
@@ -24,5 +24,26 @@ export class RuleService {
     );
   }
 
+  async remove(id: string) {
+    return this.ruleModel.findByIdAndUpdate(
+      id,
+      { isActive: false },
+    );
+  }
+
+  async findAll(page = 1, limit = 10) {
+    return this.ruleModel
+      .find()
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+  }
+
+  async findByEventName(eventName: string) {
+    return this.ruleModel.find({
+      eventName,
+      isActive: true,
+    });
+  }
 }
 
