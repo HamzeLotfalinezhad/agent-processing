@@ -16,6 +16,8 @@ export class AgentService implements OnModuleInit {
   private readonly logger = new Logger(AgentService.name);
 
   private readonly agentId: string;
+  private readonly emitInterval: number;
+  private readonly bufferFlushInterval: number;
 
   // buffer events when kafka is down
   private buffer: AgentEvent[] = [];
@@ -27,6 +29,10 @@ export class AgentService implements OnModuleInit {
     private readonly configService: ConfigService,
   ) {
     this.agentId = this.configService.get<string>('AGENT_ID') ?? `agent-${Math.floor(Math.random() * 10_000)}`;
+
+    this.emitInterval = Number(this.configService.get('EMIT_INTERVAL', 200));
+
+    this.bufferFlushInterval = Number(this.configService.get('BUFFER_FLUSH_INTERVAL', 2000));
   }
 
 
@@ -37,10 +43,10 @@ export class AgentService implements OnModuleInit {
       this.emitEvent().catch((err) =>
         this.logger.error('Failed to emit event', err),
       );
-    }, 1000);
+    }, this.emitInterval);
 
     // each 2 second flush buffer
-    setInterval(() => this.flushBuffer(), 2000);
+    setInterval(() => this.flushBuffer(), this.bufferFlushInterval);
   }
 
   async emitEvent() {
