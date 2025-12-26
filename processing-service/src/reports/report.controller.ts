@@ -18,7 +18,7 @@ export class ReportsController {
     @Query() query: GetRuleAgentReportDto,
   ) {
     const now = Date.now();
-    const MAX_RANGE = 24 * 60 * 60 * 1000; // 24h
+    const MAX_RANGE = 24 * 60 * 60 * 1000;
 
     let from = now - MAX_RANGE;
     let to = now;
@@ -26,24 +26,39 @@ export class ReportsController {
     if (query.last) {
       const [, value, unit] = query.last.match(/^(\d+)(m|h|d)$/)!;
 
-      const multiplier: any = {
+      const multiplier = {
         m: 60 * 1000,
         h: 60 * 60 * 1000,
         d: 24 * 60 * 60 * 1000,
       }[unit];
 
-      const range = Number(value) * multiplier;
-
-      // max 24h
+      const range = Number(value) * multiplier!;
       from = now - Math.min(range, MAX_RANGE);
     }
 
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const offset = (page - 1) * limit;
     const key = `rule:${ruleId}:agent:${agentId}`;
-    const eventsRaw = await this.redisService.pub.zrangebyscore(key, from, to, 'WITHSCORES');
 
-    const events: { triggerId: string; timestamp: number }[] = [];
+    const total = await this.redisService.pub.zcount(key, from, to);
+
+    const eventsRaw = await this.redisService.pub.zrangebyscore(
+      key,
+      from,
+      to,
+      'WITHSCORES',
+      'LIMIT',
+      offset,
+      limit,
+    );
+
+    const events = [];
     for (let i = 0; i < eventsRaw.length; i += 2) {
-      events.push({ triggerId: eventsRaw[i], timestamp: Number(eventsRaw[i + 1]) });
+      events.push({
+        triggerId: eventsRaw[i],
+        timestamp: Number(eventsRaw[i + 1]),
+      });
     }
 
     return {
@@ -51,8 +66,11 @@ export class ReportsController {
       agentId,
       from,
       to,
-      count: events.length,
-      events
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      events,
     };
   }
 
