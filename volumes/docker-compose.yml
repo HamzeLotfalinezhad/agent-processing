@@ -5,8 +5,9 @@ services:
     build:
       context: ../agent-service
       dockerfile: Dockerfile
+    restart: always
     ports:
-      - "4100:3000"
+      - "4100:4100"
     environment:
       PORT: 4100
       AGENT_ID: agent-1
@@ -14,17 +15,14 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-      redis-stack:
-        condition: service_started
-      mongodb:
-        condition: service_started
     networks:
-      - existing_network
+      - kafka-net
 
   processing-service:
     build:
       context: ../processing-service
       dockerfile: Dockerfile
+    restart: always
     ports:
       - "4101:4101"
     environment:
@@ -34,12 +32,14 @@ services:
       KAFKA_BROKERS: kafka:9092
       KAFKA_CONSUMER_GROUP: process-service-consumer
     depends_on:
-      - kafka
-      - redis-stack
-      - mongodb
-      - postgres
+      kafka:
+        condition: service_healthy
+      redis-stack:
+        condition: service_started
+      mongodb:
+        condition: service_started
     networks:
-      - existing_network
+      - kafka-net
 
   mongodb:
     image: mongo:latest
@@ -50,7 +50,7 @@ services:
     volumes:
       - ./docker-volumes/data:/data/db
     networks:
-      - existing_network
+      - kafka-net
 
   postgres:
     container_name: postgres_container
@@ -66,7 +66,7 @@ services:
     volumes:
       - ./docker-volumes/postgres:/var/lib/postgresql/data
     networks:
-      - existing_network
+      - kafka-net
 
   redis-stack:
     container_name: redis_stack_container
@@ -78,7 +78,7 @@ services:
     volumes:
       - ./docker-volumes/cache-stack:/data
     networks:
-      - existing_network
+      - kafka-net
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -89,7 +89,7 @@ services:
     ports:
       - "2181:2181"
     networks:
-      - existing_network
+      - kafka-net
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -101,8 +101,8 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     healthcheck:
       test: ["CMD", "bash", "-c", "kafka-topics --bootstrap-server localhost:9092 --list"]
@@ -110,8 +110,8 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - existing_network
+      - kafka-net
 
 networks:
-  existing_network:
+  kafka-net:
     driver: bridge
