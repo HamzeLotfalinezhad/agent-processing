@@ -1,4 +1,4 @@
-import { IsIn, IsNumber, IsString } from 'class-validator';
+import { IsIn, IsNumber, IsString, Max, Min, min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { RuleOperator } from '../rule.schema';
 
@@ -14,5 +14,7 @@ export class CreateRuleDto {
 
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
+  @Max(150)
   threshold: number;
 }

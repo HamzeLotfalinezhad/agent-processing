@@ -24,14 +24,14 @@ export class TriggerService {
     @InjectModel(RuleTrigger.name)
     private readonly triggerModel: Model<RuleTriggerDocument>,
     private readonly redisService: RedisService,
-  ) {}
-
+  ) { }
+  
   async match(event: EventDocument) {
     const rules = await this.ruleService.findByEventName(event.name);
 
     const triggers = rules
-      .filter(rule => this.matchValue(event.value, rule.operator, rule.threshold))
-      .map(rule => ({
+      .filter((rule: any) => this.matchValue(event.value, rule.operator, rule.threshold))
+      .map((rule: any) => ({
         ruleId: rule._id,
         agentId: event.agentId,
         eventId: event._id,
@@ -69,6 +69,7 @@ export class TriggerService {
       default: return false;
     }
   }
+
 }
 
 // @Injectable()
