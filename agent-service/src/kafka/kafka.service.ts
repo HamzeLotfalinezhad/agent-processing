@@ -1,36 +1,56 @@
-import { Injectable, Inject, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import CircuitBreaker from 'opossum';
 import { firstValueFrom } from 'rxjs';
 
+
 @Injectable()
-export class KafkaService implements OnModuleInit {
+export class KafkaService {
   private readonly logger = new Logger(KafkaService.name);
+  private breaker: CircuitBreaker;
 
-  private kafkaBreaker: CircuitBreaker;
-
-  constructor(@Inject('KAFKA_SERVICE') private readonly client: ClientKafka) {
-    // Circuit Breaker
-    this.kafkaBreaker = new CircuitBreaker(
-      (message: { topic: string; payload: any }) =>
-        firstValueFrom(this.client.emit(message.topic, message.payload)),
+  constructor(
+    @Inject('KAFKA_SERVICE')
+    private readonly client: ClientKafka,
+  ) {
+    this.breaker = new CircuitBreaker(
+      async ({ topic, value, key }: any) => {
+        return firstValueFrom(
+          this.client.emit(topic, {value,  key }),
+        );
+      }, 
       {
         timeout: 5000,
         errorThresholdPercentage: 50,
-        resetTimeout: 30000,
+        resetTimeout: 10_000, // THIS triggers HALF_OPEN
       },
     );
 
-    this.kafkaBreaker.on('open', () => this.logger.warn('Circuit Breaker opened! Kafka might be down.'));
-    this.kafkaBreaker.on('halfOpen', () => this.logger.log('Circuit Breaker half-open, testing Kafka...'));
-    this.kafkaBreaker.on('close', () => this.logger.log('Circuit Breaker closed, Kafka is back online.'));
+    this.breaker.on('open', () =>
+      this.logger.warn('Circuit breaker OPEN - Kafka down'),
+    );
+
+    this.breaker.on('halfOpen', () =>
+      this.logger.debug('Circuit breaker HALF-OPEN - testing Kafka ...'),
+    );
+
+    this.breaker.on('close', () =>
+      this.logger.log('Circuit breaker CLOSED - Kafka healthy'),
+    );
   }
 
   async onModuleInit() {
-    await this.client.connect();
+    this.client.connect().catch(err => {
+      this.logger.warn('Kafka not available at startup, continuing...');
+    });
   }
 
-  async send(topic: string, payload: any) {
-    return this.kafkaBreaker.fire({ topic, payload });
+  isConnected(): boolean {
+    return !this.breaker.opened;
+  }
+
+  async send(topic: string, payload: unknown, key?: string) {
+    const value = JSON.stringify(payload);
+    return this.breaker.fire({ topic, value, key });
   }
 }

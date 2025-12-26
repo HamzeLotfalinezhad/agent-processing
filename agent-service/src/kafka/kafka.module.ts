@@ -16,6 +16,9 @@ import { KafkaService } from './kafka.service';
             client: {
               clientId: 'agent-service',
               brokers: (config.get<string>('KAFKA_BROKERS') || 'localhost:9092').split(','),
+              retry: {
+                retries: Infinity,
+              },
             },
             // consumer: {
             //   groupId: 'payment-service-consumer', // unique per service
