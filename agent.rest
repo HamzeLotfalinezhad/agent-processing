@@ -10,7 +10,7 @@ GET http://localhost:4100/agents/health
 ###
 # Report #1
 # → زمان رخدادهای rule برای یک agent در یک بازه زمانی
-GET {{baseUrl}}/reports/rule/{{ruleId}}/agent/{{agentId}}?last=22m
+GET {{baseUrl}}/reports/rule/{{ruleId}}/agent/{{agentId}}?last=1h&page=1&limit=10
 
 
 ###
