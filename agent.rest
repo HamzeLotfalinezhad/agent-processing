@@ -1,13 +1,16 @@
 @baseUrl = http://localhost:4101
 # @ruleId = 694d84b23865d7c695cd6986
-@ruleId = 694d871855166f5016a9fb41
-@agentId = agent-1
+@ruleId = 694d84b23865d7c695cd6986
+@agentId = agent-200
+
+### agent-service health
+GET http://localhost:4100/agents/health
 
 
 ###
 # Report #1
 # → زمان رخدادهای rule برای یک agent در یک بازه زمانی
-GET {{baseUrl}}/reports/rule/{{ruleId}}/agent/{{agentId}}?last=10m
+GET {{baseUrl}}/reports/rule/{{ruleId}}/agent/{{agentId}}?last=22m
 
 
 ###
@@ -16,7 +19,7 @@ GET {{baseUrl}}/reports/rule/{{ruleId}}/agent/{{agentId}}?last=10m
 GET {{baseUrl}}/reports/rule/{{ruleId}}/agents?top=10
 
 
-###
+### create rule
 POST {{baseUrl}}/rules
 Content-Type: application/json
 
@@ -27,3 +30,14 @@ Content-Type: application/json
   "threshold": 80
 }
 
+
+### update rule
+PUT {{baseUrl}}/rules/694d84b23865d7c695cd6986
+Content-Type: application/json
+
+{
+  "name": "High temperature"
+}
+
+### delete
+DELETE {{baseUrl}}/rules/694d84b23865d7c695cd6986
