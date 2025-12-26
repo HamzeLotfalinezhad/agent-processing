@@ -11,6 +11,8 @@ services:
     environment:
       PORT: 4100
       AGENT_ID: agent-1
+      EMIT_INTERVAL: 200
+      BUFFER_FLUSH_INTERVAL: 2000
       KAFKA_BROKERS: kafka:9092
     depends_on:
       kafka:
@@ -29,6 +31,7 @@ services:
       PORT: 4101
       MONGODB_URI: mongodb://mongodb_container:27017/processing-db
       REDIS_URL: redis://redis-stack:6379
+      REDIS_RULE_EXPIRE: 600
       KAFKA_BROKERS: kafka:9092
       KAFKA_CONSUMER_GROUP: process-service-consumer
     depends_on:

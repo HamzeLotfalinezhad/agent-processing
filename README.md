@@ -21,6 +21,7 @@ A robust event-driven system using Kafka, NestJS, MongoDB, and Redis, designed f
   - Generate reports based on events (per agent, per rule).
 - Dead-letter queue (DLQ) for business failures.
 - Handles infrastructure failures (Mongo, Redis, Kafka) with automatic retries.
+- RuleService → Redis + Mongo fallback for better performance
 
 ### Infrastructure & Reliability
 - Idempotency with Redis to prevent duplicate processing.

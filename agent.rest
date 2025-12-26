@@ -1,7 +1,6 @@
 @baseUrl = http://localhost:4101
-# @ruleId = 694d84b23865d7c695cd6986
-@ruleId = 694d84b23865d7c695cd6986
-@agentId = agent-200
+@ruleId = 694d871855166f5016a9fb41
+@agentId = agent-100
 
 ### agent-service health
 GET http://localhost:4100/agents/health
@@ -20,6 +19,10 @@ GET {{baseUrl}}/reports/rule/{{ruleId}}/agents?top=10
 
 
 ### create rule
+# "name": "High temperature",
+# "eventName": "temperature", // pressure, speed, voltage, noise, light
+# "operator": ">", // '>', '<', '=', '>=', '<='
+# "threshold": 80 // 0 to 120
 POST {{baseUrl}}/rules
 Content-Type: application/json
 
@@ -27,7 +30,7 @@ Content-Type: application/json
   "name": "High temperature",
   "eventName": "temperature",
   "operator": ">",
-  "threshold": 80
+  "threshold": 22
 }
 
 
@@ -36,7 +39,7 @@ PUT {{baseUrl}}/rules/694d84b23865d7c695cd6986
 Content-Type: application/json
 
 {
-  "name": "High temperature"
+  "threshold": 33
 }
 
 ### delete
