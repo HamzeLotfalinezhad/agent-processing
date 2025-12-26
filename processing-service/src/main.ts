@@ -34,6 +34,10 @@ async function bootstrap() {
           'KAFKA_CONSUMER_GROUP',
           'processing-service-consumer',
         ),
+        allowAutoTopicCreation: false,
+      },
+      run: {
+        autoCommit: false, // because i have DLQ
       },
     },
   });
