@@ -3,6 +3,7 @@ import { Ctx, EventPattern, KafkaContext, MessagePattern, Payload } from '@nestj
 import { EventService } from '../../events/event.service';
 import { TriggerService } from '../../triggers/trigger.service';
 import { KafkaService } from '../../kafka/kafka.service';
+import { RedisService } from '../../redis/redis.service';
 
 @Controller()
 export class KafkaConsumerController {
@@ -12,6 +13,7 @@ export class KafkaConsumerController {
     private readonly eventService: EventService,
     private readonly triggerService: TriggerService,
     private readonly kafkaService: KafkaService,
+    private readonly redisService: RedisService,
   ) { }
 
   @EventPattern('agent.events')
@@ -23,15 +25,29 @@ export class KafkaConsumerController {
     const partition = context.getPartition();
     const payload = typeof message.value === 'string' ? JSON.parse(message.value) : message.value;
 
-    try {
-      // this.logger.log(`1.1. Save in Mongo ${JSON.stringify(payload)}`);
+    // 1️ check idempotency
+    const eventId = payload.agentId + "" + payload?.timestamp;
+    const idempotencyKey = `processed:event:${eventId}`;
+    const acquired = await this.redisService.pub.set(idempotencyKey, '1', 'EX', 60 * 60 * 24, 'NX',);
 
+    if (!acquired) {
+      this.logger.warn(`Duplicate event skipped: ${eventId}`);
+      // commit offset immediately if event already in redis
+      await consumer.commitOffsets([
+        {
+          topic,
+          partition,
+          offset: (Number(message.offset) + 1).toString(),
+        },
+      ]);
+      return;
+    }
+
+    try {
       // 1️ First save event in mongo
       const event = await this.eventService.save(payload);
-
       // 2️ match rules + save RuleTrigger + Redis
       await this.triggerService.match(event);
-      
       this.logger.log(`1.1. Save in Mongo and Match rules ${JSON.stringify(payload)}`)
 
       // success - commit offset
